@@ -18,6 +18,9 @@ import { SolutionPanel } from './ui/SolutionPanel.tsx'
 import { Cube3D } from './view/Cube3D.tsx'
 import { useTurnQueue } from './view/useTurnQueue.ts'
 
+/** Quarter turns per second while a scramble plays. */
+const SCRAMBLE_SPEED = 12
+
 interface ActiveSolution {
   start: CubeState
   solution: Solution
@@ -44,9 +47,11 @@ const App = () => {
     setError(null)
   }
 
+  /** Scrambles play out from a solved cube, fast. */
   const scramble = (moves: Move[]) => {
     clearSolution()
-    reset(applyMoves(SOLVED, moves))
+    reset(SOLVED)
+    enqueue(moves, SCRAMBLE_SPEED)
   }
 
   const runSolver = (with_: SolverSettings = settings) => {
@@ -142,6 +147,7 @@ const App = () => {
             speed={speed}
             onTurnDone={onTurnDone}
             onStickerClick={editing === null ? undefined : (i) => setEditing(paintSticker(editing, i, paint))}
+            idleEnabled={editing === null}
           />
           <OrbitControls enablePan={false} minDistance={5} maxDistance={14} />
         </Canvas>

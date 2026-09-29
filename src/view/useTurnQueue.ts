@@ -6,31 +6,38 @@ import { SOLVED, type CubeState } from '../cube/state.ts'
 export interface Turn {
   move: Move
   id: number
+  /** Overrides the normal speed (quarter turns per second), e.g. for fast scrambles. */
+  speed?: number
+}
+
+interface Queued {
+  move: Move
+  speed?: number
 }
 
 interface QueueState {
   /** The cube at rest, before the current turn. */
   cube: CubeState
   turn: Turn | null
-  queue: Move[]
+  queue: Queued[]
   nextId: number
 }
 
 type Action =
-  | { type: 'enqueue'; moves: readonly Move[] }
+  | { type: 'enqueue'; moves: readonly Move[]; speed?: number }
   | { type: 'turnDone' }
   | { type: 'reset'; cube: CubeState }
 
 const startNext = (s: QueueState): QueueState => {
   if (s.turn || s.queue.length === 0) return s
-  const [move, ...rest] = s.queue
-  return { ...s, turn: { move, id: s.nextId }, queue: rest, nextId: s.nextId + 1 }
+  const [{ move, speed }, ...rest] = s.queue
+  return { ...s, turn: { move, id: s.nextId, speed }, queue: rest, nextId: s.nextId + 1 }
 }
 
 const reducer = (s: QueueState, a: Action): QueueState => {
   switch (a.type) {
     case 'enqueue':
-      return startNext({ ...s, queue: [...s.queue, ...a.moves] })
+      return startNext({ ...s, queue: [...s.queue, ...a.moves.map((move) => ({ move, speed: a.speed }))] })
     case 'turnDone':
       if (!s.turn) return s
       return startNext({ ...s, cube: applyMove(s.cube, s.turn.move), turn: null })
@@ -51,7 +58,10 @@ export const useTurnQueue = (initial: CubeState = SOLVED) => {
     busy: state.turn !== null || state.queue.length > 0,
     /** Moves waiting after the current turn. */
     pending: state.queue.length,
-    enqueue: useCallback((moves: readonly Move[]) => dispatch({ type: 'enqueue', moves }), []),
+    enqueue: useCallback(
+      (moves: readonly Move[], speed?: number) => dispatch({ type: 'enqueue', moves, speed }),
+      [],
+    ),
     turnDone: useCallback(() => dispatch({ type: 'turnDone' }), []),
     reset: useCallback((cube: CubeState) => dispatch({ type: 'reset', cube }), []),
   }
