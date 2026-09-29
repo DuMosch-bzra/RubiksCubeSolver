@@ -1,4 +1,5 @@
 import type { CubeState } from '../state.ts'
+import { solveBeginner } from './beginner.ts'
 import { DEFAULT_CFOP, solveCFOP, type CfopOptions, type LookMode, type Solution } from './solve.ts'
 
 /*
@@ -27,7 +28,7 @@ export const METHODS: readonly MethodInfo[] = [
     id: 'beginner',
     name: 'Beginner (layer by layer)',
     summary: 'One layer at a time with a handful of short algorithms. Easy to follow, long solutions.',
-    available: false,
+    available: true,
   },
   {
     id: 'two-phase',
@@ -57,6 +58,7 @@ export const solve = (state: CubeState, settings: SolverSettings = DEFAULT_SETTI
     case 'cfop':
       return solveCFOP(state, settings.cfop)
     case 'beginner':
+      return solveBeginner(state)
     case 'two-phase':
       throw new MethodNotAvailableError(settings.method)
   }

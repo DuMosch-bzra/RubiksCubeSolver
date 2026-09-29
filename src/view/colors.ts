@@ -8,9 +8,9 @@ import type { Face } from '../cube/state.ts'
 const SCHEME: Record<Face, { hex: string; name: string }> = {
   U: { hex: '#ffd500', name: 'yellow' },
   D: { hex: '#f5f5f5', name: 'white' },
-  F: { hex: '#009b48', name: 'green' },
-  B: { hex: '#0046ad', name: 'blue' },
-  R: { hex: '#b71234', name: 'red' },
+  F: { hex: '#00ff00', name: 'green' },
+  B: { hex: '#0000ff', name: 'blue' },
+  R: { hex: '#ff0000', name: 'red' },
   L: { hex: '#ff5800', name: 'orange' },
 }
 

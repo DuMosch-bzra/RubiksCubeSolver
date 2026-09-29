@@ -42,12 +42,14 @@ export const invertAlgorithm = (moves: readonly Move[]): Move[] => [...moves].re
 /**
  * Merges consecutive turns of the same layer: "U U" -> "U2", "R R'" -> "",
  * "R U U' R'" -> "". Doesn't reorder commuting moves (R L R stays).
+ * `mergeable` limits which layers may merge (e.g. only U, to keep the
+ * boundaries between taught algorithms visible).
  */
-export const simplifyMoves = (moves: readonly Move[]): Move[] => {
+export const simplifyMoves = (moves: readonly Move[], mergeable: (base: BaseMove) => boolean = () => true): Move[] => {
   const out: Move[] = []
   for (const m of moves) {
     const last = out.at(-1)
-    if (last && last.base === m.base) {
+    if (last && last.base === m.base && mergeable(m.base)) {
       out.pop()
       const amount = (last.amount + m.amount) % 4
       if (amount !== 0) out.push({ base: m.base, amount: amount as Amount })

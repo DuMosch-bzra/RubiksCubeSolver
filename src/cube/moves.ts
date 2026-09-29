@@ -121,3 +121,19 @@ export const moveAxis = (base: BaseMove): Vec3 => MOVE_DEFS[base].axis
 /** Whether the cubie at `pos` turns with this move (for animation). */
 export const isInLayer = (base: BaseMove, pos: Vec3): boolean =>
   MOVE_DEFS[base].layer(dot(pos, MOVE_DEFS[base].axis))
+
+/**
+ * The same algorithm performed on a rotated cube, written without the
+ * rotation: `rotateAlgorithm(R U R', [y])` gives the moves you would do
+ * after "y", then undo the y, e.g. F U F'. Only face turns are relabelled.
+ */
+export const rotateAlgorithm = (moves: readonly Move[], rotation: readonly Move[]): Move[] => {
+  const undo = [...rotation].reverse().map(({ base, amount }) => ({ base, amount: (4 - amount) as Amount }))
+  const probe = STICKERS.map((_, i) => String.fromCharCode(0x100 + i)).join('')
+  return moves.map((m) => {
+    const target = compileMoves([...rotation, m, ...undo])(probe)
+    const same = FACE_TURNS.find((f) => compileMoves([f])(probe) === target)
+    if (!same) throw new Error(`Cannot relabel ${m.base} under a rotation`)
+    return same
+  })
+}

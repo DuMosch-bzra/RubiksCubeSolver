@@ -86,7 +86,7 @@ describe('methods', () => {
     expect(solve(s, DEFAULT_SETTINGS)).toEqual(solveCFOP(s))
   })
 
-  it.each(['beginner', 'two-phase'] as const)('reports %s as not implemented yet', (method) => {
+  it.each(['two-phase'] as const)('reports %s as not implemented yet', (method) => {
     expect(() => solve(SOLVED, { ...DEFAULT_SETTINGS, method })).toThrow(MethodNotAvailableError)
   })
 
