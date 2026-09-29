@@ -114,3 +114,10 @@ export const compileMoves = (moves: readonly Move[]): ((state: string) => string
 export const FACE_TURNS: readonly Move[] = (['U', 'D', 'R', 'L', 'F', 'B'] as const).flatMap((base) =>
   ([1, 2, 3] as Amount[]).map((amount) => ({ base, amount })),
 )
+
+/** Axis a move turns clockwise around (for animation). */
+export const moveAxis = (base: BaseMove): Vec3 => MOVE_DEFS[base].axis
+
+/** Whether the cubie at `pos` turns with this move (for animation). */
+export const isInLayer = (base: BaseMove, pos: Vec3): boolean =>
+  MOVE_DEFS[base].layer(dot(pos, MOVE_DEFS[base].axis))
