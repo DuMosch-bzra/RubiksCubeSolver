@@ -1,11 +1,26 @@
 import type { Face } from '../cube/state.ts'
 
-/** Standard Western colour scheme: white top, green front. */
-export const FACE_COLORS: Record<Face, string> = {
-  U: '#ffd500',
-  D: '#f5f5f5',
-  F: '#009b48',
-  B: '#0046ad',
-  R: '#b71234',
-  L: '#ff5800',
+/**
+ * Colour scheme: yellow top, green front, so the white cross is solved on
+ * the bottom as in CFOP. Each face's colour and its name live together so
+ * they can't drift apart.
+ */
+const SCHEME: Record<Face, { hex: string; name: string }> = {
+  U: { hex: '#ffd500', name: 'yellow' },
+  D: { hex: '#f5f5f5', name: 'white' },
+  F: { hex: '#009b48', name: 'green' },
+  B: { hex: '#0046ad', name: 'blue' },
+  R: { hex: '#b71234', name: 'red' },
+  L: { hex: '#ff5800', name: 'orange' },
 }
+
+const mapScheme = <T,>(pick: (entry: { hex: string; name: string }) => T) =>
+  Object.fromEntries(Object.entries(SCHEME).map(([f, e]) => [f, pick(e)])) as Record<Face, T>
+
+export const FACE_COLORS: Record<Face, string> = mapScheme((e) => e.hex)
+export const COLOR_NAMES: Record<Face, string> = mapScheme((e) => e.name)
+
+export const colorName = (f: Face): string => COLOR_NAMES[f]
+
+/** Colour of an unpainted sticker. */
+export const UNPAINTED_COLOR = '#55555b'

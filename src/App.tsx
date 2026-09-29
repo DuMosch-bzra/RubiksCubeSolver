@@ -6,7 +6,10 @@ import { applyMoves, type Move } from './cube/moves.ts'
 import { invertMove } from './cube/notation.ts'
 import { UnsolvableCubeError } from './cube/solver/errors.ts'
 import { solve, type Solution } from './cube/solver/solve.ts'
-import { SOLVED, isSolved, type CubeState } from './cube/state.ts'
+import { SOLVED, isSolved, type CubeState, type Face } from './cube/state.ts'
+import type { UNPAINTED } from './cube/validate.ts'
+import { ColorEditor } from './ui/ColorEditor.tsx'
+import { paintSticker } from './ui/editing.ts'
 import { ScramblePanel } from './ui/ScramblePanel.tsx'
 import { SolutionPanel } from './ui/SolutionPanel.tsx'
 import { Cube3D } from './view/Cube3D.tsx'
@@ -26,6 +29,9 @@ const App = () => {
   const [cursor, setCursor] = useState(0)
   const [playing, setPlaying] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  /** Colour editor: the cube being painted, or null when not editing. */
+  const [editing, setEditing] = useState<CubeState | null>(null)
+  const [paint, setPaint] = useState<Face | typeof UNPAINTED>('U')
 
   const clearSolution = () => {
     setActive(null)
@@ -92,6 +98,7 @@ const App = () => {
   // Keyboard: space = play/pause, arrows = step.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (editing !== null) return
       const t = e.target
       // Let text fields keep their keys; the speed slider keeps its arrows.
       if (t instanceof HTMLTextAreaElement) return
@@ -107,7 +114,7 @@ const App = () => {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [playPause, next, prev])
+  }, [playPause, next, prev, editing])
 
   return (
     <div className="app">
@@ -116,7 +123,13 @@ const App = () => {
           <ambientLight intensity={1.6} />
           <directionalLight position={[5, 8, 6]} intensity={1.4} />
           <directionalLight position={[-6, -4, -5]} intensity={0.5} />
-          <Cube3D state={cube} turn={turn} speed={speed} onTurnDone={onTurnDone} />
+          <Cube3D
+            state={editing ?? cube}
+            turn={editing === null ? turn : null}
+            speed={speed}
+            onTurnDone={onTurnDone}
+            onStickerClick={editing === null ? undefined : (i) => setEditing(paintSticker(editing, i, paint))}
+          />
           <OrbitControls enablePan={false} minDistance={5} maxDistance={14} />
         </Canvas>
         <p className="hint">Drag to look around · scroll to zoom</p>
@@ -128,29 +141,60 @@ const App = () => {
           <p className="muted small">CFOP: cross, F2L, 2-look OLL, PLL</p>
         </header>
 
-        <ScramblePanel disabled={busy} onScramble={scramble} onReset={() => { clearSolution(); reset(SOLVED) }} />
-
-        {!active && (
-          <section className="panel-section">
-            <button className="primary wide" onClick={runSolver} disabled={busy || isSolved(cube)}>
-              {isSolved(cube) ? 'Already solved' : 'Solve'}
-            </button>
-            {error && <p className="error">{error}</p>}
-          </section>
-        )}
-
-        {active && (
-          <SolutionPanel
-            solution={active.solution}
-            cursor={cursor}
-            playing={playing}
-            speed={speed}
-            onPlayPause={playPause}
-            onNext={next}
-            onPrev={prev}
-            onJump={jump}
-            onSpeed={setSpeed}
+        {editing !== null ? (
+          <ColorEditor
+            value={editing}
+            paint={paint}
+            onPaintChange={setPaint}
+            onChange={setEditing}
+            onCopyCurrent={() => setEditing(cube)}
+            onUse={() => {
+              clearSolution()
+              reset(editing)
+              setEditing(null)
+            }}
+            onCancel={() => setEditing(null)}
           />
+        ) : (
+          <>
+            <ScramblePanel
+              disabled={busy}
+              onScramble={scramble}
+              onReset={() => {
+                clearSolution()
+                reset(SOLVED)
+              }}
+            />
+
+            <section className="panel-section">
+              <button className="wide" onClick={() => { setPlaying(false); setEditing(cube) }} disabled={busy}>
+                Enter colours of a real cube
+              </button>
+            </section>
+
+            {!active && (
+              <section className="panel-section">
+                <button className="primary wide" onClick={runSolver} disabled={busy || isSolved(cube)}>
+                  {isSolved(cube) ? 'Already solved' : 'Solve'}
+                </button>
+                {error && <p className="error">{error}</p>}
+              </section>
+            )}
+
+            {active && (
+              <SolutionPanel
+                solution={active.solution}
+                cursor={cursor}
+                playing={playing}
+                speed={speed}
+                onPlayPause={playPause}
+                onNext={next}
+                onPrev={prev}
+                onJump={jump}
+                onSpeed={setSpeed}
+              />
+            )}
+          </>
         )}
       </aside>
     </div>

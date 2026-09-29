@@ -5,7 +5,7 @@ import { Group, Vector3 } from 'three'
 import { STICKERS, type Vec3 } from '../cube/geometry.ts'
 import { isInLayer, moveAxis } from '../cube/moves.ts'
 import type { CubeState, Face } from '../cube/state.ts'
-import { FACE_COLORS } from './colors.ts'
+import { FACE_COLORS, UNPAINTED_COLOR } from './colors.ts'
 import type { Turn } from './useTurnQueue.ts'
 
 interface Props {
@@ -14,6 +14,8 @@ interface Props {
   /** Quarter turns per second; half turns take 1.5x as long. */
   speed: number
   onTurnDone: () => void
+  /** When set, clicking a sticker calls this (used by the colour editor). */
+  onStickerClick?: (index: number) => void
 }
 
 const CUBIES: Vec3[] = []
@@ -33,11 +35,28 @@ const Cubie = ({ pos }: { pos: Vec3 }) => (
   </RoundedBox>
 )
 
-const Sticker = ({ index, color }: { index: number; color: string }) => {
+interface StickerProps {
+  index: number
+  color: string
+  onClick?: (index: number) => void
+}
+
+const Sticker = ({ index, color, onClick }: StickerProps) => {
   const { pos, normal } = STICKERS[index]
   const at: Vec3 = [pos[0] + normal[0] * 0.485, pos[1] + normal[1] * 0.485, pos[2] + normal[2] * 0.485]
   return (
-    <mesh position={at} rotation={facing(normal)}>
+    <mesh
+      position={at}
+      rotation={facing(normal)}
+      onClick={
+        onClick &&
+        ((e) => {
+          if (e.delta > 4) return // it was a drag to orbit, not a click
+          e.stopPropagation()
+          onClick(index)
+        })
+      }
+    >
       <planeGeometry args={[0.84, 0.84]} />
       <meshStandardMaterial color={color} roughness={0.35} />
     </mesh>
@@ -51,7 +70,7 @@ const Sticker = ({ index, color }: { index: number; color: string }) => {
  * the new state at rest looks exactly like the old one fully rotated, so
  * swapping them is invisible.
  */
-export const Cube3D = ({ state, turn, speed, onTurnDone }: Props) => {
+export const Cube3D = ({ state, turn, speed, onTurnDone, onStickerClick }: Props) => {
   const turning = useRef<Group>(null)
   const progress = useRef(0)
   const done = useRef(false)
@@ -79,13 +98,13 @@ export const Cube3D = ({ state, turn, speed, onTurnDone }: Props) => {
   })
 
   const moving = (pos: Vec3) => turn !== null && isInLayer(turn.move.base, pos)
-  const stickers = STICKERS.map((s, i) => ({ i, pos: s.pos, color: FACE_COLORS[state[i] as Face] ?? '#666' }))
+  const stickers = STICKERS.map((s, i) => ({ i, pos: s.pos, color: FACE_COLORS[state[i] as Face] ?? UNPAINTED_COLOR }))
 
   return (
     <group>
       <group>
         {CUBIES.filter((p) => !moving(p)).map((p) => <Cubie key={p.join()} pos={p} />)}
-        {stickers.filter((s) => !moving(s.pos)).map((s) => <Sticker key={s.i} index={s.i} color={s.color} />)}
+        {stickers.filter((s) => !moving(s.pos)).map((s) => <Sticker key={s.i} index={s.i} color={s.color} onClick={onStickerClick} />)}
       </group>
       <group ref={turning}>
         {CUBIES.filter(moving).map((p) => <Cubie key={p.join()} pos={p} />)}
