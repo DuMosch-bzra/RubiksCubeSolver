@@ -55,3 +55,23 @@ export const stickerIndex = (s: Sticker): number => {
   if (i === undefined) throw new Error(`No sticker at ${key(s)}`)
   return i
 }
+
+/** Groups sticker indices by the cubie they sit on (index order within each group). */
+const groupCubies = (zeroCoords: number): number[][] => {
+  const groups = new Map<string, number[]>()
+  STICKERS.forEach((s, i) => {
+    if (s.pos.filter((c) => c === 0).length !== zeroCoords) return
+    const k = s.pos.join(',')
+    groups.set(k, [...(groups.get(k) ?? []), i])
+  })
+  return [...groups.values()]
+}
+
+/** The 12 edge cubies, each as its 2 sticker indices. */
+export const EDGE_CUBIES: readonly number[][] = groupCubies(1)
+/** The 8 corner cubies, each as its 3 sticker indices. */
+export const CORNER_CUBIES: readonly number[][] = groupCubies(0)
+
+/** Sticker indices of the cubie at `pos`. */
+export const cubieAt = (pos: Vec3): number[] =>
+  STICKERS.flatMap((s, i) => (s.pos.every((c, k) => c === pos[k]) ? [i] : []))

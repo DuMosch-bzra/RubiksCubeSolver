@@ -38,3 +38,22 @@ export const formatAlgorithm = (moves: readonly Move[]): string => moves.map(for
 export const invertMove = ({ base, amount }: Move): Move => ({ base, amount: (4 - amount) as Amount })
 
 export const invertAlgorithm = (moves: readonly Move[]): Move[] => [...moves].reverse().map(invertMove)
+
+/**
+ * Merges consecutive turns of the same layer: "U U" -> "U2", "R R'" -> "",
+ * "R U U' R'" -> "". Doesn't reorder commuting moves (R L R stays).
+ */
+export const simplifyMoves = (moves: readonly Move[]): Move[] => {
+  const out: Move[] = []
+  for (const m of moves) {
+    const last = out.at(-1)
+    if (last && last.base === m.base) {
+      out.pop()
+      const amount = (last.amount + m.amount) % 4
+      if (amount !== 0) out.push({ base: m.base, amount: amount as Amount })
+    } else {
+      out.push(m)
+    }
+  }
+  return out
+}

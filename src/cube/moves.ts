@@ -94,3 +94,23 @@ export const applyMove = (state: CubeState, move: Move): CubeState => {
 
 export const applyMoves = (state: CubeState, moves: readonly Move[]): CubeState =>
   moves.reduce(applyMove, state)
+
+/**
+ * Compiles a move sequence into a single permutation, so applying it costs
+ * one pass over the stickers regardless of its length. Works on any
+ * 54-character string, including "marked" cubes used by the searches.
+ */
+export const compileMoves = (moves: readonly Move[]): ((state: string) => string) => {
+  let perm = STICKERS.map((_, i) => i)
+  for (const m of moves) perm = compose(perm, PERMS[m.base][m.amount])
+  return (state) => {
+    let out = ''
+    for (let j = 0; j < perm.length; j++) out += state[perm[j]]
+    return out
+  }
+}
+
+/** The 18 outer face turns (U, U2, U', D, ...). */
+export const FACE_TURNS: readonly Move[] = (['U', 'D', 'R', 'L', 'F', 'B'] as const).flatMap((base) =>
+  ([1, 2, 3] as Amount[]).map((amount) => ({ base, amount })),
+)
