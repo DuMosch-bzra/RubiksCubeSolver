@@ -7,7 +7,10 @@ import { SOLVED, facelet, type CubeState } from '../state.ts'
 import { CROSS_STATE_COUNT, crossTableSize, isCrossSolved, solveCross } from './cross.ts'
 import { UnsolvableCubeError } from './errors.ts'
 import { SLOTS, isSlotSolved, pairStateCount, slotInserts, solveF2L } from './f2l.ts'
-import { solve } from './solve.ts'
+import {
+  DEFAULT_SETTINGS, MethodNotAvailableError, describeSettings, parseSettings, solve,
+} from './methods.ts'
+import { solveCFOP } from './solve.ts'
 
 const run = (alg: string, from: CubeState = SOLVED) => applyMoves(from, parseAlgorithm(alg))
 const scrambles = (n: number, seed = 1) => {
@@ -76,6 +79,28 @@ describe('F2L', () => {
   })
 })
 
+describe('methods', () => {
+  it('dispatches to CFOP by default', () => {
+    const s = scrambles(1, 9)[0]
+    expect(applyMoves(s, solve(s).moves)).toBe(SOLVED)
+    expect(solve(s, DEFAULT_SETTINGS)).toEqual(solveCFOP(s))
+  })
+
+  it.each(['beginner', 'two-phase'] as const)('reports %s as not implemented yet', (method) => {
+    expect(() => solve(SOLVED, { ...DEFAULT_SETTINGS, method })).toThrow(MethodNotAvailableError)
+  })
+
+  it('describes the settings', () => {
+    expect(describeSettings({ method: 'cfop', cfop: { oll: 'full', pll: 'two-look' } })).toBe('CFOP · full OLL · 2-look PLL')
+  })
+
+  it('parses saved settings defensively', () => {
+    expect(parseSettings(null)).toEqual(DEFAULT_SETTINGS)
+    expect(parseSettings({ method: 'two-phase', cfop: { oll: 'two-look', pll: 'nonsense' } }))
+      .toEqual({ method: 'cfop', cfop: { oll: 'two-look', pll: 'full' } })
+  })
+})
+
 describe('solve', () => {
   it('returns no moves for a solved cube', () => {
     const { moves, steps } = solve(SOLVED)
@@ -83,9 +108,14 @@ describe('solve', () => {
     expect(steps.filter((s) => s.stage === 'oll' || s.stage === 'pll').every((s) => s.caseName === 'skip')).toBe(true)
   })
 
-  it.each(['full', 'two-look'] as const)('solves 300 random scrambles (%s PLL)', (pll) => {
-    for (const s of scrambles(300, pll === 'full' ? 3 : 4)) {
-      const { steps, moves } = solve(s, { pll })
+  it.each([
+    ['full', 'full'],
+    ['full', 'two-look'],
+    ['two-look', 'full'],
+    ['two-look', 'two-look'],
+  ] as const)('solves 250 random scrambles (OLL %s, PLL %s)', (oll, pll) => {
+    for (const s of scrambles(250, oll.length * 10 + pll.length)) {
+      const { steps, moves } = solveCFOP(s, { oll, pll })
       expect(applyMoves(s, moves)).toBe(SOLVED)
       let state = s
       for (const step of steps) {
@@ -93,6 +123,8 @@ describe('solve', () => {
         if (step.stage === 'cross') expect(isCrossSolved(state)).toBe(true)
       }
       expect(state).toBe(SOLVED)
+      expect(steps.filter((st) => st.stage === 'oll')).toHaveLength(oll === 'full' ? 1 : 2)
+      expect(steps.filter((st) => st.stage === 'pll')).toHaveLength(pll === 'full' ? 1 : 2)
     }
   })
 

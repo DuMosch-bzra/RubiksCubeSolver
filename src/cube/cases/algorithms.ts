@@ -66,3 +66,84 @@ export const PLL_FULL: readonly AlgorithmDef[] = [
   { name: 'Y', alg: "F R U' R' U' R U R' F' R U R' U' R' F R F'" },
   { name: 'Z', alg: "M' U M2 U M2 U M' U2 M2" },
 ]
+
+/**
+ * Full OLL: all 57 cases in one algorithm. Names follow the standard
+ * numbering with the usual shape group. The numbers are labels only; the
+ * tests prove the set is complete and has no duplicates, but can't prove
+ * that a number matches the case other sites show under that number.
+ */
+export const OLL_FULL: readonly AlgorithmDef[] = [
+  // Dot (no edges oriented)
+  { name: 'OLL 1 (dot)', alg: "R U2 R2 F R F' U2 R' F R F'" },
+  { name: 'OLL 2 (dot)', alg: "F R U R' U' F' f R U R' U' f'" },
+  { name: 'OLL 3 (dot)', alg: "f R U R' U' f' U' F R U R' U' F'" },
+  { name: 'OLL 4 (dot)', alg: "f R U R' U' f' U F R U R' U' F'" },
+  { name: 'OLL 17 (dot)', alg: "R U R' U R' F R F' U2 R' F R F'" },
+  { name: 'OLL 18 (dot)', alg: "r U R' U R U2 r2 U' R U' R' U2 r" },
+  { name: 'OLL 19 (dot)', alg: "r' R U R U R' U' M' R' F R F'" },
+  { name: 'OLL 20 (dot)', alg: "r U R' U' M2 U R U' R' U' M'" },
+  // Square
+  { name: 'OLL 5 (square)', alg: "r' U2 R U R' U r" },
+  { name: 'OLL 6 (square)', alg: "r U2 R' U' R U' r'" },
+  // Small lightning
+  { name: 'OLL 7 (lightning)', alg: "r U R' U R U2 r'" },
+  { name: 'OLL 8 (lightning)', alg: "l' U' L U' L' U2 l" },
+  { name: 'OLL 11 (lightning)', alg: "r U R' U R' F R F' R U2 r'" },
+  { name: 'OLL 12 (lightning)', alg: "F R U R' U' F' U F R U R' U' F'" },
+  // Fish
+  { name: 'OLL 9 (fish)', alg: "R U R' U' R' F R2 U R' U' F'" },
+  { name: 'OLL 10 (fish)', alg: "R U R' U R' F R F' R U2 R'" },
+  { name: 'OLL 35 (fish)', alg: "R U2 R2 F R F' R U2 R'" },
+  { name: 'OLL 37 (fish)', alg: "F R' F' R U R U' R'" },
+  // Knight move
+  { name: 'OLL 13 (knight)', alg: "F U R U' R2 F' R U R U' R'" },
+  { name: 'OLL 14 (knight)', alg: "R' F R U R' F' R F U' F'" },
+  { name: 'OLL 15 (knight)', alg: "r' U' r R' U' R U r' U r" },
+  { name: 'OLL 16 (knight)', alg: "r U r' R U R' U' r U' r'" },
+  // Corners oriented (OCLL)
+  { name: 'OLL 21 (H)', alg: "R U2 R' U' R U R' U' R U' R'" },
+  { name: 'OLL 22 (Pi)', alg: "R U2 R2 U' R2 U' R2 U2 R" },
+  { name: 'OLL 23 (headlights)', alg: "R2 D' R U2 R' D R U2 R" },
+  { name: 'OLL 24 (chameleon)', alg: "r U R' U' r' F R F'" },
+  { name: 'OLL 25 (bowtie)', alg: "F' r U R' U' r' F R" },
+  { name: 'OLL 26 (antisune)', alg: "R U2 R' U' R U' R'" },
+  { name: 'OLL 27 (sune)', alg: "R U R' U R U2 R'" },
+  // Corners oriented, edges not
+  { name: 'OLL 28 (arrow)', alg: "r U R' U' r' R U R U' R'" },
+  { name: 'OLL 57 (H-bar)', alg: "R U R' U' M' U R U' r'" },
+  // Awkward
+  { name: 'OLL 29 (awkward)', alg: "R U R' U' R U' R' F' U' F R U R'" },
+  { name: 'OLL 30 (awkward)', alg: "F R' F R2 U' R' U' R U R' F2" },
+  { name: 'OLL 41 (awkward)', alg: "R U R' U R U2 R' F R U R' U' F'" },
+  { name: 'OLL 42 (awkward)', alg: "R' U' R U' R' U2 R F R U R' U' F'" },
+  // P shape
+  { name: 'OLL 31 (P)', alg: "R' U' F U R U' R' F' R" },
+  { name: 'OLL 32 (P)', alg: "R U B' U' R' U R B R'" },
+  { name: 'OLL 43 (P)', alg: "R' U' F' U F R" },
+  { name: 'OLL 44 (P)', alg: "F U R U' R' F'" },
+  // T shape
+  { name: 'OLL 33 (T)', alg: "R U R' U' R' F R F'" },
+  { name: 'OLL 45 (T)', alg: "F R U R' U' F'" },
+  // C shape
+  { name: 'OLL 34 (C)', alg: "R U R2 U' R' F R U R U' F'" },
+  { name: 'OLL 46 (C)', alg: "R' U' R' F R F' U R" },
+  // W shape
+  { name: 'OLL 36 (W)', alg: "L' U' L U' L' U L U L F' L' F" },
+  { name: 'OLL 38 (W)', alg: "R U R' U R U' R' U' R' F R F'" },
+  // Big lightning
+  { name: 'OLL 39 (lightning)', alg: "L F' L' U' L U F U' L'" },
+  { name: 'OLL 40 (lightning)', alg: "R' F R U R' U' F' U R" },
+  // L shape
+  { name: 'OLL 47 (L)', alg: "R' U' R' F R F' R' F R F' U R" },
+  { name: 'OLL 48 (L)', alg: "F R U R' U' R U R' U' F'" },
+  { name: 'OLL 49 (L)', alg: "r U' r2 U r2 U r2 U' r" },
+  { name: 'OLL 50 (L)', alg: "r' U r2 U' r2 U' r2 U r'" },
+  { name: 'OLL 53 (L)', alg: "r' U' R U' R' U R U' R' U2 r" },
+  { name: 'OLL 54 (L)', alg: "r U R' U R U' R' U R U2 r'" },
+  // Line
+  { name: 'OLL 51 (line)', alg: "F U R U' R' U R U' R' F'" },
+  { name: 'OLL 52 (line)', alg: "R U R' U R U' B U' B' R'" },
+  { name: 'OLL 55 (line)', alg: "R U2 R2 U' R U' R' U2 F R F'" },
+  { name: 'OLL 56 (line)', alg: "r' U' r U' R' U R U' R' U R r' U r" },
+]

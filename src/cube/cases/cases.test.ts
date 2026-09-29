@@ -6,7 +6,7 @@ import { SOLVED, faceStickers, type CubeState } from '../state.ts'
 import {
   SKIP, buildCaseTable, edgeOrientationKey, isF2LSolved, orientationKey, permutationKey, type CaseTable,
 } from './caseTable.ts'
-import { OLL_CORNERS_2LOOK, OLL_EDGES_2LOOK, PLL_CORNERS_2LOOK, PLL_EDGES_2LOOK, PLL_FULL } from './tables.ts'
+import { OLL_CORNERS_2LOOK, OLL_EDGES_2LOOK, OLL_FULL, PLL_CORNERS_2LOOK, PLL_EDGES_2LOOK, PLL_FULL } from './tables.ts'
 
 const run = (alg: string, from: CubeState = SOLVED) => applyMoves(from, parseAlgorithm(alg))
 
@@ -63,6 +63,7 @@ describe('last-layer state space', () => {
 describe.each([
   [OLL_EDGES_2LOOK, 4],
   [OLL_CORNERS_2LOOK, 8],
+  [OLL_FULL, 58],
   [PLL_CORNERS_2LOOK, 3],
   [PLL_EDGES_2LOOK, 5],
   [PLL_FULL, 22],
@@ -85,6 +86,16 @@ describe('coverage', () => {
       const afterEdges = solveWith(state, OLL_EDGES_2LOOK)
       expect(edgeOrientationKey(afterEdges)).toBe('1111')
       const done = solveWith(afterEdges, OLL_CORNERS_2LOOK)
+      expect(topSolved(done)).toBe(true)
+      expect(isF2LSolved(done)).toBe(true)
+    }
+  })
+
+  it('full OLL orients all 216 orientation cases in one algorithm', () => {
+    const cases = representatives(allLastLayers, orientationKey)
+    expect(OLL_FULL.size).toBe(216)
+    for (const state of cases) {
+      const done = solveWith(state, OLL_FULL)
       expect(topSolved(done)).toBe(true)
       expect(isF2LSolved(done)).toBe(true)
     }

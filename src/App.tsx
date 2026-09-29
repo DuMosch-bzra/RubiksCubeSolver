@@ -5,7 +5,10 @@ import './App.css'
 import { applyMoves, type Move } from './cube/moves.ts'
 import { invertMove } from './cube/notation.ts'
 import { UnsolvableCubeError } from './cube/solver/errors.ts'
-import { solve, type Solution } from './cube/solver/solve.ts'
+import { MethodNotAvailableError, describeSettings, solve, type SolverSettings } from './cube/solver/methods.ts'
+import type { Solution } from './cube/solver/solve.ts'
+import { MethodPanel } from './ui/MethodPanel.tsx'
+import { loadSettings, saveSettings } from './ui/settingsStorage.ts'
 import { SOLVED, isSolved, type CubeState, type Face } from './cube/state.ts'
 import type { UNPAINTED } from './cube/validate.ts'
 import { ColorEditor } from './ui/ColorEditor.tsx'
@@ -32,6 +35,7 @@ const App = () => {
   /** Colour editor: the cube being painted, or null when not editing. */
   const [editing, setEditing] = useState<CubeState | null>(null)
   const [paint, setPaint] = useState<Face | typeof UNPAINTED>('U')
+  const [settings, setSettings] = useState<SolverSettings>(loadSettings)
 
   const clearSolution = () => {
     setActive(null)
@@ -45,16 +49,25 @@ const App = () => {
     reset(applyMoves(SOLVED, moves))
   }
 
-  const runSolver = () => {
+  const runSolver = (with_: SolverSettings = settings) => {
     try {
-      const solution = solve(cube)
+      const solution = solve(cube, with_)
       setActive({ start: cube, solution, moves: solution.steps.flatMap((s) => s.moves) })
       setCursor(0)
+      setPlaying(false)
       setError(null)
     } catch (e) {
-      if (e instanceof UnsolvableCubeError) setError(e.message)
+      if (e instanceof UnsolvableCubeError || e instanceof MethodNotAvailableError) setError(e.message)
       else throw e
     }
+  }
+
+  /** New settings apply right away: a shown solution is recomputed from where the cube is now. */
+  const changeSettings = (next: SolverSettings) => {
+    setSettings(next)
+    saveSettings(next)
+    if (active && !isSolved(cube)) runSolver(next)
+    else if (active) clearSolution()
   }
 
   const total = active?.moves.length ?? 0
@@ -138,7 +151,7 @@ const App = () => {
       <aside className="panel">
         <header>
           <h1>Rubik&apos;s Cube Solver</h1>
-          <p className="muted small">CFOP: cross, F2L, 2-look OLL, PLL</p>
+          <p className="muted small">{describeSettings(settings)}</p>
         </header>
 
         {editing !== null ? (
@@ -166,6 +179,8 @@ const App = () => {
               }}
             />
 
+            <MethodPanel settings={settings} disabled={busy} onChange={changeSettings} />
+
             <section className="panel-section">
               <button className="wide" onClick={() => { setPlaying(false); setEditing(cube) }} disabled={busy}>
                 Enter colours of a real cube
@@ -174,7 +189,7 @@ const App = () => {
 
             {!active && (
               <section className="panel-section">
-                <button className="primary wide" onClick={runSolver} disabled={busy || isSolved(cube)}>
+                <button className="primary wide" onClick={() => runSolver()} disabled={busy || isSolved(cube)}>
                   {isSolved(cube) ? 'Already solved' : 'Solve'}
                 </button>
                 {error && <p className="error">{error}</p>}

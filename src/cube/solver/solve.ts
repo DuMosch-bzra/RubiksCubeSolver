@@ -1,5 +1,5 @@
 import type { CaseTable } from '../cases/caseTable.ts'
-import { OLL_CORNERS_2LOOK, OLL_EDGES_2LOOK, PLL_CORNERS_2LOOK, PLL_EDGES_2LOOK, PLL_FULL } from '../cases/tables.ts'
+import { OLL_CORNERS_2LOOK, OLL_EDGES_2LOOK, OLL_FULL, PLL_CORNERS_2LOOK, PLL_EDGES_2LOOK, PLL_FULL } from '../cases/tables.ts'
 import { applyMoves, type Move } from '../moves.ts'
 import { simplifyMoves } from '../notation.ts'
 import { orientationFix } from '../rotation.ts'
@@ -25,17 +25,23 @@ export interface Solution {
   moves: Move[]
 }
 
-export interface SolveOptions {
-  /** 'full' = one PLL algorithm (default), 'two-look' = corners then edges. */
-  pll?: 'full' | 'two-look'
+/** 'two-look' = two smaller steps with few algorithms, 'full' = one algorithm per case. */
+export type LookMode = 'two-look' | 'full'
+
+export interface CfopOptions {
+  oll: LookMode
+  pll: LookMode
 }
 
+export const DEFAULT_CFOP: CfopOptions = { oll: 'full', pll: 'full' }
+
 /**
- * CFOP: cross on D, F2L, 2-look OLL, then PLL.
+ * CFOP: cross on D, F2L, OLL, then PLL.
  * Throws UnsolvableCubeError when the state can't come from a real cube
  * (flipped edge, twisted corner, swapped pieces, duplicated stickers).
  */
-export const solve = (start: CubeState, { pll = 'full' }: SolveOptions = {}): Solution => {
+export const solveCFOP = (start: CubeState, options: Partial<CfopOptions> = {}): Solution => {
+  const { oll, pll } = { ...DEFAULT_CFOP, ...options }
   const steps: SolveStep[] = []
   let state = start
   const push = (step: SolveStep) => {
@@ -55,8 +61,12 @@ export const solve = (start: CubeState, { pll = 'full' }: SolveOptions = {}): So
     if (!hit) throw new UnsolvableCubeError(`${label}: no matching case, the last layer is impossible`)
     push({ stage, label, caseName: hit.caseName, moves: simplifyMoves(hit.moves) })
   }
-  lastLayer('oll', 'OLL (edges)', OLL_EDGES_2LOOK)
-  lastLayer('oll', 'OLL (corners)', OLL_CORNERS_2LOOK)
+  if (oll === 'full') {
+    lastLayer('oll', 'OLL', OLL_FULL)
+  } else {
+    lastLayer('oll', 'OLL (edges)', OLL_EDGES_2LOOK)
+    lastLayer('oll', 'OLL (corners)', OLL_CORNERS_2LOOK)
+  }
   if (pll === 'full') {
     lastLayer('pll', 'PLL', PLL_FULL)
   } else {

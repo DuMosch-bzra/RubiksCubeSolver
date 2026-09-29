@@ -22,3 +22,7 @@ export const PLL_EDGES_2LOOK = buildCaseTable({
 export const PLL_FULL = buildCaseTable({
   name: 'PLL', algorithms: algs.PLL_FULL, key: permutationKey, preAuf: true, postAuf: true,
 })
+
+export const OLL_FULL = buildCaseTable({
+  name: 'OLL', algorithms: algs.OLL_FULL, key: orientationKey, preAuf: true,
+})
