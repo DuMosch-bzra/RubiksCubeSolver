@@ -8,7 +8,7 @@ import { CROSS_STATE_COUNT, crossTableSize, isCrossSolved, solveCross } from './
 import { UnsolvableCubeError } from './errors.ts'
 import { SLOTS, isSlotSolved, pairStateCount, slotInserts, solveF2L } from './f2l.ts'
 import {
-  DEFAULT_SETTINGS, MethodNotAvailableError, describeSettings, parseSettings, solve,
+  DEFAULT_SETTINGS, describeSettings, parseSettings, solve,
 } from './methods.ts'
 import { solveCFOP } from './solve.ts'
 
@@ -86,17 +86,13 @@ describe('methods', () => {
     expect(solve(s, DEFAULT_SETTINGS)).toEqual(solveCFOP(s))
   })
 
-  it.each(['two-phase'] as const)('reports %s as not implemented yet', (method) => {
-    expect(() => solve(SOLVED, { ...DEFAULT_SETTINGS, method })).toThrow(MethodNotAvailableError)
-  })
-
   it('describes the settings', () => {
     expect(describeSettings({ method: 'cfop', cfop: { oll: 'full', pll: 'two-look' } })).toBe('CFOP · full OLL · 2-look PLL')
   })
 
   it('parses saved settings defensively', () => {
     expect(parseSettings(null)).toEqual(DEFAULT_SETTINGS)
-    expect(parseSettings({ method: 'two-phase', cfop: { oll: 'two-look', pll: 'nonsense' } }))
+    expect(parseSettings({ method: 'nonsense', cfop: { oll: 'two-look', pll: 'nonsense' } }))
       .toEqual({ method: 'cfop', cfop: { oll: 'two-look', pll: 'full' } })
   })
 })

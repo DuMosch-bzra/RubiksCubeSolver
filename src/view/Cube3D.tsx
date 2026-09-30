@@ -49,7 +49,7 @@ interface LayerFidget {
 /** Seconds for one full layer spin. */
 const SPIN_DURATION = 1.5
 /** Pause between spins while idling: random between these (seconds). */
-const SPIN_GAP = [0.2, 0.8] as const
+const SPIN_GAP = [1, 1.2] as const
 const nextGap = () => SPIN_GAP[0] + Math.random() * (SPIN_GAP[1] - SPIN_GAP[0])
 const LAYERS = ['U', 'D', 'R', 'L', 'F', 'B', 'M', 'E', 'S'] as const
 

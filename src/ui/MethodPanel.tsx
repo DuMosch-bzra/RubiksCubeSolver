@@ -5,6 +5,8 @@ interface Props {
   settings: SolverSettings
   disabled: boolean
   onChange: (settings: SolverSettings) => void
+  /** Extra line under the method, e.g. table-building progress. */
+  status?: string
 }
 
 const LOOK_OPTIONS: { value: LookMode; label: string; hint: string }[] = [
@@ -38,7 +40,7 @@ const Segmented = ({ label, value, disabled, onChange }: {
   </div>
 )
 
-export const MethodPanel = ({ settings, disabled, onChange }: Props) => (
+export const MethodPanel = ({ settings, disabled, onChange, status }: Props) => (
   <section className="panel-section">
     <h2>Method</h2>
     <div className="methods" role="radiogroup" aria-label="Solving method">
@@ -76,5 +78,6 @@ export const MethodPanel = ({ settings, disabled, onChange }: Props) => (
         />
       </div>
     )}
+    {status && <p className="muted small method-status">{status}</p>}
   </section>
 )

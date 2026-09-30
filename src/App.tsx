@@ -1,6 +1,6 @@
 import { OrbitControls } from '@react-three/drei'
 import { Canvas } from '@react-three/fiber'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import './App.css'
 import { applyMoves, type Move } from './cube/moves.ts'
 import { invertMove } from './cube/notation.ts'
@@ -16,6 +16,7 @@ import { paintSticker } from './ui/editing.ts'
 import { ScramblePanel } from './ui/ScramblePanel.tsx'
 import { SolutionPanel } from './ui/SolutionPanel.tsx'
 import { Cube3D } from './view/Cube3D.tsx'
+import { onTablesStatus, solveTwoPhaseAsync, tablesStatus, warmUp } from './view/twoPhaseClient.ts'
 import { useTurnQueue } from './view/useTurnQueue.ts'
 
 /** Quarter turns per second while a scramble plays. */
@@ -39,8 +40,20 @@ const App = () => {
   const [editing, setEditing] = useState<CubeState | null>(null)
   const [paint, setPaint] = useState<Face | typeof UNPAINTED>('U')
   const [settings, setSettings] = useState<SolverSettings>(loadSettings)
+  /** A two-phase search is running in the worker. */
+  const [computing, setComputing] = useState(false)
+  /** Bumped whenever a pending solve result would be out of date (cube changed, solution cleared). */
+  const solveRequest = useRef(0)
+  const twoPhaseTables = useSyncExternalStore(onTablesStatus, tablesStatus)
+
+  // Build the two-phase tables in the background as soon as that method is chosen.
+  useEffect(() => {
+    if (settings.method === 'two-phase') warmUp()
+  }, [settings.method])
 
   const clearSolution = () => {
+    solveRequest.current++
+    setComputing(false)
     setActive(null)
     setCursor(0)
     setPlaying(false)
@@ -55,15 +68,36 @@ const App = () => {
   }
 
   const runSolver = (with_: SolverSettings = settings) => {
-    try {
-      const solution = solve(cube, with_)
-      setActive({ start: cube, solution, moves: solution.steps.flatMap((s) => s.moves) })
+    const from = cube
+    const request = ++solveRequest.current
+    const show = (solution: Solution) => {
+      if (request !== solveRequest.current) return // the cube changed while we were solving
+      setComputing(false)
+      setActive({ start: from, solution, moves: solution.steps.flatMap((s) => s.moves) })
       setCursor(0)
       setPlaying(false)
       setError(null)
-    } catch (e) {
+    }
+    const fail = (e: unknown) => {
+      if (request !== solveRequest.current) return
+      setComputing(false)
       if (e instanceof UnsolvableCubeError || e instanceof MethodNotAvailableError) setError(e.message)
-      else throw e
+      else {
+        console.error(e)
+        setError(`The solver failed: ${(e as Error).message}`)
+      }
+    }
+    if (with_.method === 'two-phase') {
+      setComputing(true)
+      setError(null)
+      setActive(null)
+      solveTwoPhaseAsync(from).then(show, fail)
+      return
+    }
+    try {
+      show(solve(from, with_))
+    } catch (e) {
+      fail(e)
     }
   }
 
@@ -185,7 +219,20 @@ const App = () => {
               }}
             />
 
-            <MethodPanel settings={settings} disabled={busy} onChange={changeSettings} />
+            <MethodPanel
+              settings={settings}
+              disabled={busy || computing}
+              onChange={changeSettings}
+              status={
+                settings.method !== 'two-phase'
+                  ? undefined
+                  : twoPhaseTables.state === 'building'
+                    ? `Preparing search tables… ${Math.round(twoPhaseTables.fraction * 100)}%`
+                    : twoPhaseTables.state === 'ready'
+                      ? 'Search tables ready. Solving takes up to about 1.5 s.'
+                      : undefined
+              }
+            />
 
             <section className="panel-section">
               <button className="wide" onClick={() => { setPlaying(false); setEditing(cube) }} disabled={busy}>
@@ -195,8 +242,8 @@ const App = () => {
 
             {!active && (
               <section className="panel-section">
-                <button className="primary wide" onClick={() => runSolver()} disabled={busy || isSolved(cube)}>
-                  {isSolved(cube) ? 'Already solved' : 'Solve'}
+                <button className="primary wide" onClick={() => runSolver()} disabled={busy || computing || isSolved(cube)}>
+                  {isSolved(cube) ? 'Already solved' : computing ? 'Searching…' : 'Solve'}
                 </button>
                 {error && <p className="error">{error}</p>}
               </section>

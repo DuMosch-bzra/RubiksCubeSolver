@@ -171,3 +171,4 @@ button.wide { width: 100%; padding: 10px; font-size: 15px; }
 }
 .segmented button + button { border-left: 1px solid var(--border); }
 .segmented button.selected { background: var(--accent); color: white; }
+.method-status { margin: 10px 0 0; }

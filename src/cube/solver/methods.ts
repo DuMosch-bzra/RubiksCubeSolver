@@ -1,5 +1,6 @@
 import type { CubeState } from '../state.ts'
 import { solveBeginner } from './beginner.ts'
+import { solveTwoPhase } from './twophase/index.ts'
 import { DEFAULT_CFOP, solveCFOP, type CfopOptions, type LookMode, type Solution } from './solve.ts'
 
 /*
@@ -34,7 +35,7 @@ export const METHODS: readonly MethodInfo[] = [
     id: 'two-phase',
     name: 'Two-phase (Kociemba)',
     summary: 'Computer search that finds solutions of about 20 moves. Not human-friendly.',
-    available: false,
+    available: true,
   },
 ]
 
@@ -60,7 +61,7 @@ export const solve = (state: CubeState, settings: SolverSettings = DEFAULT_SETTI
     case 'beginner':
       return solveBeginner(state)
     case 'two-phase':
-      throw new MethodNotAvailableError(settings.method)
+      return solveTwoPhase(state)
   }
 }
 

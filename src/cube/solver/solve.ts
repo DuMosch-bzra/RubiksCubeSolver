@@ -8,7 +8,17 @@ import { solveCross } from './cross.ts'
 import { UnsolvableCubeError } from './errors.ts'
 import { solveF2L } from './f2l.ts'
 
-export type Stage = 'orientation' | 'cross' | 'f2l' | 'oll' | 'pll' | 'first-layer' | 'second-layer' | 'last-layer'
+export type Stage =
+  | 'orientation'
+  | 'cross'
+  | 'f2l'
+  | 'oll'
+  | 'pll'
+  | 'first-layer'
+  | 'second-layer'
+  | 'last-layer'
+  | 'phase-1'
+  | 'phase-2'
 
 export interface SolveStep {
   stage: Stage
