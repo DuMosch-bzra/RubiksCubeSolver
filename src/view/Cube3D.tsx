@@ -42,26 +42,28 @@ const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 
 // ---------------------------------------------------------------------------
 
 interface LayerFidget {
-  kind: 'flick' | 'spin'
   move: Move
   id: number
 }
 
-const FIDGET_DURATION = { flick: 0.9, spin: 1.5 }
-const HOP_DURATION = 0.7
+/** Seconds for one full layer spin. */
+const SPIN_DURATION = 1.5
+/** Pause between spins while idling: random between these (seconds). */
+const SPIN_GAP = [0.2, 0.8] as const
+const nextGap = () => SPIN_GAP[0] + Math.random() * (SPIN_GAP[1] - SPIN_GAP[0])
 const LAYERS = ['U', 'D', 'R', 'L', 'F', 'B', 'M', 'E', 'S'] as const
 
-const randomFidget = (id: number): LayerFidget => ({
-  kind: Math.random() < 0.6 ? 'flick' : 'spin',
-  move: { base: LAYERS[Math.floor(Math.random() * LAYERS.length)], amount: Math.random() < 0.5 ? 1 : 3 },
-  id,
-})
-
-/** Layer angle over time: a flick goes out 90 degrees and back, a spin does a full turn. */
-const fidgetAngle = ({ kind, move }: LayerFidget, p: number) => {
-  const dir = move.amount === 3 ? 1 : -1
-  return kind === 'flick' ? dir * (Math.PI / 2) * Math.sin(Math.PI * p) ** 2 : dir * 2 * Math.PI * easeInOut(p)
+/** A random layer to spin, never the same one twice in a row. */
+const randomFidget = (id: number, previous: Move['base'] | null): LayerFidget => {
+  const choices = LAYERS.filter((l) => l !== previous)
+  return {
+    move: { base: choices[Math.floor(Math.random() * choices.length)], amount: Math.random() < 0.5 ? 1 : 3 },
+    id,
+  }
 }
+
+/** Layer angle over time: one full turn, eased at both ends. */
+const fidgetAngle = ({ move }: LayerFidget, p: number) => (move.amount === 3 ? 1 : -1) * 2 * Math.PI * easeInOut(p)
 
 /** Wraps an angle into (-pi, pi] so easing back takes the short way round. */
 const wrap = (a: number) => a - 2 * Math.PI * Math.round(a / (2 * Math.PI))
@@ -123,8 +125,8 @@ export const Cube3D = ({ state, turn, speed, onTurnDone, onStickerClick, idleEna
   const [fidget, setFidget] = useState<LayerFidget | null>(null)
   const nextFidgetId = useRef(0)
   const lastActive = useRef(-Infinity)
-  const nextIdleEventAt = useRef(0.8)
-  const hopStart = useRef<number | null>(null)
+  const nextIdleEventAt = useRef(0.4)
+  const lastLayer = useRef<Move['base'] | null>(null)
   const { gl } = useThree()
 
   // Dragging or zooming the view counts as activity.
@@ -159,7 +161,7 @@ export const Cube3D = ({ state, turn, speed, onTurnDone, onStickerClick, idleEna
     const t = now()
     if (turn || !idleEnabled) lastActive.current = t
     const idle = idleEnabled && !turn && t - lastActive.current > IDLE_AFTER
-    if (!idle) nextIdleEventAt.current = t + 0.8
+    if (!idle) nextIdleEventAt.current = t + 0.4
 
     // Real turn
     if (turn && axis && turning.current && !done.current) {
@@ -175,35 +177,28 @@ export const Cube3D = ({ state, turn, speed, onTurnDone, onStickerClick, idleEna
       }
     } else if (!turn && fidget && axis && turning.current) {
       // Idle layer fidget
-      progress.current = Math.min(1, progress.current + delta / FIDGET_DURATION[fidget.kind])
+      progress.current = Math.min(1, progress.current + delta / SPIN_DURATION)
       turning.current.quaternion.setFromAxisAngle(axis, fidgetAngle(fidget, progress.current))
       if (progress.current >= 1) {
         turning.current.quaternion.identity()
         setFidget(null)
-        nextIdleEventAt.current = t + 1.2 + Math.random() * 2
+        nextIdleEventAt.current = t + nextGap()
       }
-    } else if (idle && !fidget && hopStart.current === null && t >= nextIdleEventAt.current) {
-      // Next idle event: mostly layer fidgets, sometimes a hop
-      if (Math.random() < 0.2) hopStart.current = t
-      else setFidget(randomFidget(nextFidgetId.current++))
+    } else if (idle && !fidget && t >= nextIdleEventAt.current) {
+      // Next idle spin
+      const next = randomFidget(nextFidgetId.current++, lastLayer.current)
+      lastLayer.current = next.move.base
+      setFidget(next)
       nextIdleEventAt.current = Infinity
     }
 
     // Whole-cube motion: slow turntable spin and bob while idle, eased back to rest otherwise
     const g = whole.current
     if (!g) return
-    let hop = 0
-    if (hopStart.current !== null) {
-      const p = (t - hopStart.current) / HOP_DURATION
-      if (p >= 1) {
-        hopStart.current = null
-        nextIdleEventAt.current = t + 1.2 + Math.random() * 2
-      } else hop = Math.sin(Math.PI * p)
-    }
     if (idle) {
       g.rotation.y += delta * 0.3
-      g.position.y = Math.sin(t * 1.3) * 0.06 + hop * 0.45
-      g.rotation.x = Math.sin(t * 0.7) * 0.05 + hop * 0.12
+      g.position.y = Math.sin(t * 1.3) * 0.06
+      g.rotation.x = Math.sin(t * 0.7) * 0.05
     } else {
       const k = Math.exp(-delta * 7)
       g.rotation.y = wrap(g.rotation.y) * k
